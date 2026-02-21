@@ -1,7 +1,7 @@
 {
   "name": "aws-architect",
-  "description": "AWS Solutions Architect with expertise in EKS, ECS, AgentCore, and AWS best practices",
-  "instructions": "You are an AWS Solutions Architect specializing in container orchestration (EKS, ECS), Amazon Bedrock AgentCore, and AWS Well-Architected Framework best practices. You provide guidance on:\n\n- Amazon EKS (Elastic Kubernetes Service) cluster design, deployment, and management\n- Amazon ECS (Elastic Container Service) architecture and containerization strategies\n- Amazon Bedrock AgentCore platform services, APIs, and implementation patterns\n- AWS Well-Architected Framework pillars: Operational Excellence, Security, Reliability, Performance Efficiency, Cost Optimization, and Sustainability\n- Infrastructure as Code best practices using CDK and CloudFormation\n- Container security, networking, and observability\n- Serverless and microservices architectures\n\nAlways reference official AWS documentation and follow AWS best practices. Provide concrete, actionable recommendations with code examples when appropriate.",
+  "description": "AWS Solutions Architect with expertise in AgentCore, Infrastructure as Code, and AWS best practices",
+  "prompt": "You are an AWS Solutions Architect specializing in Amazon Bedrock AgentCore, Infrastructure as Code, and AWS Well-Architected Framework best practices. You provide guidance on:\n\n- Amazon Bedrock AgentCore platform services, APIs, and implementation patterns\n- AWS Well-Architected Framework pillars: Operational Excellence, Security, Reliability, Performance Efficiency, Cost Optimization, and Sustainability\n- Infrastructure as Code best practices using CDK and CloudFormation\n- AWS service architecture and design patterns\n- Security, networking, and observability\n- Serverless and microservices architectures\n\nAlways reference official AWS documentation and follow AWS best practices. Provide concrete, actionable recommendations with code examples when appropriate.",
   "mcpServers": {
     "aws-knowledge": {
       "type": "http",
@@ -15,34 +15,6 @@
         "FASTMCP_LOG_LEVEL": "ERROR"
       },
       "description": "Comprehensive documentation on AgentCore platform services, APIs, and best practices"
-    },
-    "eks": {
-      "command": "uvx",
-      "args": [
-        "awslabs.eks-mcp-server@latest",
-        "--allow-write",
-        "--allow-sensitive-data-access"
-      ],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      },
-      "description": "Kubernetes cluster management and application deployment on EKS"
-    },
-    "ecs": {
-      "command": "uvx",
-      "args": [
-        "--from",
-        "awslabs-ecs-mcp-server",
-        "ecs-mcp-server"
-      ],
-      "env": {
-        "AWS_PROFILE": "default",
-        "AWS_REGION": "us-east-1",
-        "FASTMCP_LOG_LEVEL": "ERROR",
-        "ALLOW_WRITE": "false",
-        "ALLOW_SENSITIVE_DATA": "false"
-      },
-      "description": "Container orchestration and ECS application deployment"
     },
     "aws-iac": {
       "command": "uvx",
@@ -63,17 +35,33 @@
       "description": "Latest AWS documentation and API references"
     }
   },
-  "model": {
-    "provider": "anthropic",
-    "name": "claude-sonnet-4.6-20250514",
-    "temperature": 0.3,
-    "max_tokens": 1000000
-  },
-  "capabilities": {
-    "code_execution": false,
-    "file_operations": true,
-    "web_search": true
-  },
+  "tools": [
+    "fs_read",
+    "fs_write",
+    "execute_bash",
+    "grep",
+    "glob",
+    "code",
+    "web_search",
+    "web_fetch",
+    "use_aws",
+    "@aws-knowledge",
+    "@aws-bedrock-agentcore",
+    "@aws-iac",
+    "@aws-docs"
+  ],
+  "allowedTools": [
+    "fs_read",
+    "grep",
+    "glob",
+    "code",
+    "web_search",
+    "web_fetch",
+    "@aws-knowledge/*",
+    "@aws-docs/*"
+  ],
+  "model": "claude-sonnet-4.6-20250514",
+  "includeMcpJson": false,
   "resources": [
     "skill://.kiro/skills/**/SKILL.md"
   ]
