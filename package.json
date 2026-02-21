@@ -11,9 +11,13 @@
     "auth": "tsc && node build/auth.js",
     "lint": "biome check --diagnostic-level=warn --error-on-warnings",
     "lint:fix": "biome check --write --unsafe --organize-imports-enabled=true",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --config src/tests/vitest.config.ts",
+    "test:watch": "vitest --config src/tests/vitest.config.ts"
   },
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "keywords": [],
   "author": "Marcel Marais",
   "description": "A Model Context Protocol server for Spotify integration",
@@ -26,6 +30,9 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.13.8",
-    "typescript": "^5.8.2"
+    "@vitest/ui": "^4.0.18",
+    "fast-check": "^4.5.3",
+    "typescript": "^5.8.2",
+    "vitest": "^4.0.18"
   }
 }

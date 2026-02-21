@@ -318,6 +318,99 @@ const getPlaylistTracks: tool<{
     };
   },
 };
+const testAudioFeatures: tool<{
+  trackId: z.ZodString;
+}> = {
+  name: 'test_audio_features',
+  description: 'Test if we have access to the Audio Features endpoint (includes BPM/tempo)',
+  schema: {
+    trackId: z.string().describe('The Spotify ID of the track to test'),
+  },
+  handler: async (args, _extra: SpotifyHandlerExtra) => {
+    const { trackId } = args;
+
+    try {
+      const audioFeatures = await handleSpotifyRequest(async (spotifyApi) => {
+        // Try to access the audio features endpoint
+        return await (spotifyApi as any).tracks.audioFeatures(trackId);
+      });
+
+      if (!audioFeatures) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `No audio features found for track ID "${trackId}"`,
+            },
+          ],
+        };
+      }
+
+      // If we got here, we have access!
+      return {
+        content: [
+          {
+            type: 'text',
+            text:
+              `# ✅ Audio Features Access Confirmed!\n\n` +
+              `You have access to the Audio Features endpoint.\n\n` +
+              `**Track ID**: ${trackId}\n` +
+              `**BPM (Tempo)**: ${audioFeatures.tempo ?? 'N/A'}\n` +
+              `**Time Signature**: ${audioFeatures.time_signature ?? 'N/A'}\n` +
+              `**Key**: ${audioFeatures.key ?? 'N/A'}\n` +
+              `**Mode**: ${audioFeatures.mode === 1 ? 'Major' : audioFeatures.mode === 0 ? 'Minor' : 'N/A'}\n` +
+              `**Danceability**: ${audioFeatures.danceability ?? 'N/A'}\n` +
+              `**Energy**: ${audioFeatures.energy ?? 'N/A'}\n` +
+              `**Loudness**: ${audioFeatures.loudness ?? 'N/A'} dB\n` +
+              `**Speechiness**: ${audioFeatures.speechiness ?? 'N/A'}\n` +
+              `**Acousticness**: ${audioFeatures.acousticness ?? 'N/A'}\n` +
+              `**Instrumentalness**: ${audioFeatures.instrumentalness ?? 'N/A'}\n` +
+              `**Liveness**: ${audioFeatures.liveness ?? 'N/A'}\n` +
+              `**Valence**: ${audioFeatures.valence ?? 'N/A'}`,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Check if it's a 403 error (access denied)
+      if (errorMessage.includes('403') || errorMessage.includes('Forbidden')) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text:
+                `# ❌ Audio Features Access Denied\n\n` +
+                `Your Spotify app does not have access to the Audio Features endpoint.\n\n` +
+                `**Error**: 403 Forbidden\n\n` +
+                `This means your app was likely created after November 27, 2024, or doesn't have extended mode access.\n\n` +
+                `**What this means**:\n` +
+                `- You cannot access BPM/tempo data\n` +
+                `- You cannot access other audio features (danceability, energy, key, etc.)\n` +
+                `- This is a Spotify API restriction for new applications`,
+            },
+          ],
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text:
+              `# ⚠️ Error Testing Audio Features\n\n` +
+              `An error occurred while testing access to the Audio Features endpoint.\n\n` +
+              `**Error**: ${errorMessage}\n\n` +
+              `This could mean:\n` +
+              `- The track ID is invalid\n` +
+              `- There's a network issue\n` +
+              `- The endpoint is not accessible`,
+          },
+        ],
+      };
+    }
+  },
+};
 
 const getRecentlyPlayed: tool<{
   limit: z.ZodOptional<z.ZodNumber>;
@@ -599,6 +692,161 @@ const getAvailableDevices: tool<Record<string, never>> = {
     }
   },
 };
+const getTrack: tool<{
+  trackId: z.ZodString;
+}> = {
+  name: 'get_track',
+  description: 'Get detailed metadata for a single Spotify track by its ID',
+  schema: {
+    trackId: z.string().describe('The Spotify ID of the track'),
+  },
+  handler: async (args, _extra: SpotifyHandlerExtra) => {
+    const { trackId } = args;
+
+    try {
+      const track = await handleSpotifyRequest(async (spotifyApi) => {
+        return await spotifyApi.tracks.get(trackId);
+      });
+
+      if (!track) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Track with ID "${trackId}" not found`,
+            },
+          ],
+        };
+      }
+
+      const artists = track.artists.map((a) => a.name).join(', ');
+      const duration = formatDuration(track.duration_ms);
+      const explicit = track.explicit ? 'Yes' : 'No';
+      const preview = track.preview_url || 'Not available';
+      const isrc = track.external_ids?.isrc || 'N/A';
+      const popularity = track.popularity ?? 0;
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text:
+              `# Track Metadata\n\n` +
+              `**Track**: "${track.name}"\n` +
+              `**Artists**: ${artists}\n` +
+              `**Album**: ${track.album.name}\n` +
+              `**Duration**: ${duration}\n` +
+              `**Popularity**: ${popularity}/100\n` +
+              `**Explicit**: ${explicit}\n` +
+              `**ISRC**: ${isrc}\n` +
+              `**Preview**: ${preview}\n` +
+              `**Spotify URL**: ${track.external_urls.spotify}\n` +
+              `**ID**: ${track.id}`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error retrieving track metadata: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          },
+        ],
+      };
+    }
+  },
+};
+
+const getTracks: tool<{
+  trackIds: z.ZodArray<z.ZodString>;
+}> = {
+  name: 'get_tracks',
+  description:
+    'Get detailed metadata for multiple Spotify tracks by their IDs (max 50)',
+  schema: {
+    trackIds: z
+      .array(z.string())
+      .max(50)
+      .describe('Array of Spotify track IDs (maximum 50)'),
+  },
+  handler: async (args, _extra: SpotifyHandlerExtra) => {
+    const { trackIds } = args;
+
+    // Handle empty array
+    if (trackIds.length === 0) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: 'No track IDs provided',
+          },
+        ],
+      };
+    }
+
+    try {
+      const tracks = await handleSpotifyRequest(async (spotifyApi) => {
+        return await spotifyApi.tracks.get(trackIds);
+      });
+
+      if (!tracks || tracks.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'No tracks found for the provided IDs',
+            },
+          ],
+        };
+      }
+
+      const formattedTracks = tracks
+        .map((track, index) => {
+          if (!track) {
+            return `\n[Invalid ID]: ${trackIds[index]} - Track not found`;
+          }
+
+          const artists = track.artists.map((a) => a.name).join(', ');
+          const duration = formatDuration(track.duration_ms);
+
+          return (
+            `\n## ${index + 1}. "${track.name}"\n` +
+            `**Artists**: ${artists}\n` +
+            `**Album**: ${track.album.name}\n` +
+            `**Duration**: ${duration}\n` +
+            `**Popularity**: ${track.popularity}/100\n` +
+            `**ID**: ${track.id}`
+          );
+        })
+        .join('\n');
+
+      const validCount = tracks.filter((t) => t !== null).length;
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `# Track Metadata (${validCount} of ${trackIds.length} tracks)\n${formattedTracks}`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error retrieving track metadata: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          },
+        ],
+      };
+    }
+  },
+};
 
 export const readTools = [
   searchSpotify,
@@ -609,4 +857,7 @@ export const readTools = [
   getUsersSavedTracks,
   getQueue,
   getAvailableDevices,
+  getTrack,
+  getTracks,
+  testAudioFeatures,
 ];

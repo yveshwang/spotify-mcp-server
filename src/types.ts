@@ -51,3 +51,20 @@ export interface SpotifyTrack {
   artists: SpotifyArtist[];
   album: SpotifyAlbum;
 }
+
+export interface SpotifyTrackMetadata {
+  id: string;
+  name: string;
+  artists: SpotifyArtist[];
+  album: SpotifyAlbum;
+  duration_ms: number;
+  explicit: boolean;
+  popularity: number;
+  preview_url: string | null;
+  external_ids?: {
+    isrc?: string;
+  };
+  external_urls: {
+    spotify: string;
+  };
+}

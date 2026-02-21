@@ -5,6 +5,10 @@
 ```
 spotify-mcp-server/
 ├── src/                    # Source TypeScript files
+│   ├── tests/             # Test files and test utilities
+│   │   ├── vitest.config.ts  # Vitest configuration
+│   │   ├── scripts/       # Test utility scripts (not run by vitest)
+│   │   └── *.test.ts      # Vitest test files
 │   ├── index.ts           # Main entry point, MCP server setup
 │   ├── types.ts           # Shared TypeScript types and interfaces
 │   ├── utils.ts           # Spotify API client, auth, config utilities
@@ -54,3 +58,30 @@ Tools follow a consistent structure defined in `types.ts`:
 - Use kebab-case for filenames (enforced by Biome)
 - TypeScript files use `.ts` extension
 - ES module imports require `.js` extension in import paths (Node16 resolution)
+
+## Testing
+
+### Test Organization
+
+Tests are located in `src/tests/` directory:
+- `*.test.ts` files are run by vitest
+- `scripts/` directory contains utility scripts not run by vitest
+
+### Test Types
+
+- **Property-based tests**: Use `fast-check` to validate universal properties
+- **Unit tests**: Test specific edge cases and error conditions
+- **Integration tests**: Test against live Spotify API (require authentication)
+
+### Running Tests
+
+```bash
+npm test              # Run all tests
+npm test -- --watch   # Watch mode
+```
+
+### Test Configuration
+
+- Configured in `src/tests/vitest.config.ts`
+- Test timeout: 30 seconds (for API calls)
+- Test pattern: `**/*.test.{ts,js}` (relative to tests directory)
